@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import com.ninjacart.task_mgmt_service.model.enums.CommonEnum;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -14,6 +15,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @MappedSuperclass
 @Slf4j
@@ -89,12 +92,4 @@ public abstract class BaseEntity<PK extends Serializable> implements GenericEnti
         this.deleted = deleted;
     }
 
-    public void setCreatedByAndUpdated(User user) {
-        this.setCreatedAt(new Date());
-        this.setUpdatedAt(new Date());
-        this.setCreatedBy(user.getId());
-        this.setUpdatedBy(user.getId());
-        this.setDeleted((byte) 0);
-    }
 }
-

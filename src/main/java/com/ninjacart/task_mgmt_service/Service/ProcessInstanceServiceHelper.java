@@ -25,6 +25,7 @@ import com.ninjacart.task_mgmt_service.entity.ProcessInstance;
 import com.ninjacart.task_mgmt_service.entity.ProcessInstanceTask;
 import com.ninjacart.task_mgmt_service.entity.Process;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
 
 import static org.checkerframework.checker.nullness.Opt.orElseThrow;
 @Slf4j
+@Service
 public class ProcessInstanceServiceHelper {
     @Autowired
     private ProcessInstanceService processInstanceService;
@@ -42,8 +44,6 @@ public class ProcessInstanceServiceHelper {
     private ProcessCoexistenceMapService processCoexistenceMapService;
     @Autowired
     private ProcessInstanceTaskService processInstanceTaskService;
-    @Autowired
-    private KlawRestService klawRestService;
 
 
     private static Cache<Integer, List<Process>> COEXIST_PROCESS_LOCK = CacheBuilder.newBuilder().maximumSize(1000).expireAfterWrite(24, TimeUnit.HOURS).recordStats().build();
@@ -61,24 +61,26 @@ public class ProcessInstanceServiceHelper {
 
     public void addCacheForProcessAndReference(Collection<WorkFlowPayLoad> workFlowPayLoads) throws CyborgException {
         List<String> keys = new ArrayList<>();
-        for(WorkFlowPayLoad workFlowPayLoad : workFlowPayLoads) {
-            String key = workFlowPayLoad.getProcessId() + "_"+ workFlowPayLoad.getReference();
+        for (WorkFlowPayLoad workFlowPayLoad : workFlowPayLoads) {
+            String key = workFlowPayLoad.getProcessId() + "_" + workFlowPayLoad.getReference();
             Boolean keyPresent = PROCESS_REFERENCE_LOCK.getIfPresent(key);
-            if( keyPresent!= null && keyPresent) {
+            if (keyPresent != null && keyPresent) {
                 throw new LockAcquisitionException("Ticket is already being created for processId - " + workFlowPayLoad.getProcessId() + " for reference - " + workFlowPayLoad.getReference());
-            }else {
+            } else {
                 PROCESS_REFERENCE_LOCK.put(key, true);
                 keys.add(key);
             }
         }
     }
+
     public void removeCacheForProcessAndReference(Collection<WorkFlowPayLoad> workFlowPayLoads) {
-        for(WorkFlowPayLoad workFlowPayLoad : workFlowPayLoads) {
-            String key = workFlowPayLoad.getProcessId() + "_"+ workFlowPayLoad.getReference();
+        for (WorkFlowPayLoad workFlowPayLoad : workFlowPayLoads) {
+            String key = workFlowPayLoad.getProcessId() + "_" + workFlowPayLoad.getReference();
             PROCESS_REFERENCE_LOCK.invalidate(key);
         }
     }
-    /*public void validateProcessCreationForStakeholder(List<WorkFlowPayLoad> workFlowPayLoads) throws CyborgException {
+
+    public void validateProcessCreationForStakeholder(List<WorkFlowPayLoad> workFlowPayLoads) throws CyborgException {
         WorkFlowPayLoad workFlowPayLoad = workFlowPayLoads.get(0);
         Map<String, String> workflowVariables = workFlowPayLoad.getWorkflowVariables();
         if (workflowVariables == null || workflowVariables.isEmpty()) {
@@ -90,23 +92,24 @@ public class ProcessInstanceServiceHelper {
         }
         int processId = workFlowPayLoad.getProcessId();
         List<Process> coexistProcesses = COEXIST_PROCESS_LOCK.getIfPresent(processId);
-        if(coexistProcesses == null || coexistProcesses.isEmpty()) {
+        if (coexistProcesses == null || coexistProcesses.isEmpty()) {
             coexistProcesses = processCoexistenceMapService.getMappedProcessForProcess(processId);
             COEXIST_PROCESS_LOCK.put(processId, coexistProcesses);
         }
         Process process = processService.getProcessById(processId);
-                //.orElseThrow(() -> new EntityNotFoundException("Process not found for ID: " + processId));
+        //.orElseThrow(() -> new EntityNotFoundException("Process not found for ID: " + processId));
         List<Integer> ignoreProcessIds = new ArrayList<>();
-        if(!coexistProcesses.isEmpty()) {
+        if (!coexistProcesses.isEmpty()) {
             ignoreProcessIds.addAll(coexistProcesses.stream().map(Process::getId).collect(Collectors.toList()));
         }
         ignoreProcessIds.add(processId);
         List<StakeholderProcessInstanceDTO> stakeholderProcessInstanceDTOS = processInstanceService.getActiveProcessForStakeholder(Integer.parseInt(stakeHolderId), process.getDomain(), ignoreProcessIds, 5);
-        if(stakeholderProcessInstanceDTOS != null && !stakeholderProcessInstanceDTOS.isEmpty()) {
+        if (stakeholderProcessInstanceDTOS != null && !stakeholderProcessInstanceDTOS.isEmpty()) {
             StakeholderProcessInstanceDTO stakeholderProcessInstanceDTO = stakeholderProcessInstanceDTOS.get(0);
             throw new BadRequestException(stakeholderProcessInstanceDTO.getProcessName() + " ticket is in progress. Please wait for some time");
         }
     }
+
     public List<WorkFlowPayLoad> validateProcessCreationForCentralTeam(List<WorkFlowPayLoad> workFlowPayLoads, List<ProcessInstance> existingProcessInstances) {
         if (workFlowPayLoads == null || workFlowPayLoads.size() == 0) {
             return null;
@@ -118,32 +121,32 @@ public class ProcessInstanceServiceHelper {
 
         List<String> actualReferences = getReferences(workFlowPayLoads);
 
-        List<Integer> processInstanceIdList = existingProcessInstances.stream().map(each->each.getId()).collect(Collectors.toList());
-        Map<String,ProcessInstance> existingReferenceProcessInstanceMap = existingProcessInstances.stream().collect(Collectors.toMap(each->each.getReference(),each->each));
+        List<Integer> processInstanceIdList = existingProcessInstances.stream().map(each -> each.getId()).collect(Collectors.toList());
+        Map<String, ProcessInstance> existingReferenceProcessInstanceMap = existingProcessInstances.stream().collect(Collectors.toMap(each -> each.getReference(), each -> each));
 
-        List<ProcessInstanceTask> existingProcessInstanceTaskList  = processInstanceTaskService.getProcessInstanceTasksByProcessInstanceIds(processInstanceIdList);
+        List<ProcessInstanceTask> existingProcessInstanceTaskList = processInstanceTaskService.getProcessInstanceTasksByProcessInstanceIds(processInstanceIdList);
 
-        Map<Integer,Integer> instanceIdPriorityMap = existingProcessInstanceTaskList.stream().collect(Collectors.toMap(each->each.getProcessInstanceId(),each->each.getPriority()));
+        Map<Integer, Integer> instanceIdPriorityMap = existingProcessInstanceTaskList.stream().collect(Collectors.toMap(each -> each.getProcessInstanceId(), each -> each.getPriority()));
 
-        Map<String,Integer> referencePriorityMap = existingProcessInstances.stream().collect(Collectors.toMap(each->each.getReference(),each->instanceIdPriorityMap.getOrDefault(each.getId(),0)));
+        Map<String, Integer> referencePriorityMap = existingProcessInstances.stream().collect(Collectors.toMap(each -> each.getReference(), each -> instanceIdPriorityMap.getOrDefault(each.getId(), 0)));
 
         List<ProcessInstance> toBeOverriddenInstances = new ArrayList<>();
         List<ProcessInstance> toBeOverriddenTasks = new ArrayList<>();
 
         List<WorkFlowPayLoad> filteredWorkFlowPayloads = new ArrayList<>();
 
-        workFlowPayLoads.forEach(payLoad->{
-            if(referencePriorityMap.containsKey(payLoad.getReference())){
-                if(payLoad.getPriority() >= referencePriorityMap.get(payLoad.getReference())){
+        workFlowPayLoads.forEach(payLoad -> {
+            if (referencePriorityMap.containsKey(payLoad.getReference())) {
+                if (payLoad.getPriority() >= referencePriorityMap.get(payLoad.getReference())) {
                     toBeOverriddenInstances.add(existingReferenceProcessInstanceMap.get(payLoad.getReference()));
                     filteredWorkFlowPayloads.add(payLoad);
                 }
-            }else{
+            } else {
                 filteredWorkFlowPayloads.add(payLoad);
             }
         });
 
-        if(!toBeOverriddenInstances.isEmpty()){
+        if (!toBeOverriddenInstances.isEmpty()) {
             toBeOverriddenInstances.forEach(processInstance -> {
                 processInstance.setStatus(ProcessInstanceStatus.CLOSED);
             });
@@ -156,6 +159,7 @@ public class ProcessInstanceServiceHelper {
 
         return filteredWorkFlowPayloads;
     }
+
     public void validateOndcChildTickets(List<WorkFlowPayLoad> workFlowPayLoads) throws Exception {
         for (WorkFlowPayLoad object : workFlowPayLoads) {
             List<ProcessInstance> processInstances = processInstanceService.findOpenPIsByReferenceAndProcess(object.getReference(), 160);
@@ -169,64 +173,66 @@ public class ProcessInstanceServiceHelper {
             }
         }
     }
-        public List<WorkFlowPayLoad> validateWorkFlowPayloadsOnReference(List<WorkFlowPayLoad> workFlowPayLoads,
-                List<ProcessInstance> processInstances) {
-            if (workFlowPayLoads == null || workFlowPayLoads.size() == 0) {
-                return null;
-            }
 
-            if (processInstances == null || processInstances.size() == 0) {
-                return workFlowPayLoads;
-            }
-
-            List<String> actualReferences = getReferences(workFlowPayLoads);
-
-            log.info("Actual Reference {}",actualReferences);
-
-            List<String> existingReferences = processInstances.stream().map(ProcessInstance :: getReference).collect(Collectors.toList());
-
-            log.info("Existing Reference {}",existingReferences);
-
-            //subtract existingReferences from actualRefernces
-
-            actualReferences.removeAll(existingReferences);
-
-            log.info("Filtered Reference {}",actualReferences);
-
-            List<WorkFlowPayLoad> filteredWorkFlowPayloads = workFlowPayLoads.stream().filter(workFlowPayLoad ->  actualReferences.contains(workFlowPayLoad.getReference())).collect(Collectors.toList());
-
-            return filteredWorkFlowPayloads;
+    public List<WorkFlowPayLoad> validateWorkFlowPayloadsOnReference(List<WorkFlowPayLoad> workFlowPayLoads,
+                                                                     List<ProcessInstance> processInstances) {
+        if (workFlowPayLoads == null || workFlowPayLoads.size() == 0) {
+            return null;
         }
 
-        public List<WorkFlowPayLoad> validateWorkFlowPayloadsOnCreationDateAndReference(List<WorkFlowPayLoad> workFlowPayLoads,
-                List<ProcessInstance> processInstances) {
-            if (workFlowPayLoads == null || workFlowPayLoads.size() == 0) {
-                return null;
-            }
+        if (processInstances == null || processInstances.size() == 0) {
+            return workFlowPayLoads;
+        }
 
-            if (processInstances == null || processInstances.size() == 0) {
-                return workFlowPayLoads;
-            }
+        List<String> actualReferences = getReferences(workFlowPayLoads);
 
-            List<WorkFlowPayLoad> filteredWorkFlowPayloads = new ArrayList<>();
-            for(WorkFlowPayLoad workFlowPayLoad : workFlowPayLoads) {
-                boolean found = false;
-                List<ProcessInstance> existingProcessInstances = processInstances.stream().filter(processInstance -> processInstance.getReference().equals(workFlowPayLoad.getReference())).collect(Collectors.toList());
-                if(existingProcessInstances != null && !existingProcessInstances.isEmpty()) {
-                    for(ProcessInstance existingProcessInstance : existingProcessInstances) {
-                        if(DateUtils.dateFormatSort(existingProcessInstance.getCreatedAt()).equals(DateUtils.dateFormatSort(workFlowPayLoad.getCreationDate()))) {
-                            found = true;
-                            break;
-                        }
+        log.info("Actual Reference {}", actualReferences);
+
+        List<String> existingReferences = processInstances.stream().map(ProcessInstance::getReference).collect(Collectors.toList());
+
+        log.info("Existing Reference {}", existingReferences);
+
+        //subtract existingReferences from actualRefernces
+
+        actualReferences.removeAll(existingReferences);
+
+        log.info("Filtered Reference {}", actualReferences);
+
+        List<WorkFlowPayLoad> filteredWorkFlowPayloads = workFlowPayLoads.stream().filter(workFlowPayLoad -> actualReferences.contains(workFlowPayLoad.getReference())).collect(Collectors.toList());
+
+        return filteredWorkFlowPayloads;
+    }
+
+    public List<WorkFlowPayLoad> validateWorkFlowPayloadsOnCreationDateAndReference(List<WorkFlowPayLoad> workFlowPayLoads,
+                                                                                    List<ProcessInstance> processInstances) {
+        if (workFlowPayLoads == null || workFlowPayLoads.size() == 0) {
+            return null;
+        }
+
+        if (processInstances == null || processInstances.size() == 0) {
+            return workFlowPayLoads;
+        }
+
+        List<WorkFlowPayLoad> filteredWorkFlowPayloads = new ArrayList<>();
+        for (WorkFlowPayLoad workFlowPayLoad : workFlowPayLoads) {
+            boolean found = false;
+            List<ProcessInstance> existingProcessInstances = processInstances.stream().filter(processInstance -> processInstance.getReference().equals(workFlowPayLoad.getReference())).collect(Collectors.toList());
+            if (existingProcessInstances != null && !existingProcessInstances.isEmpty()) {
+                for (ProcessInstance existingProcessInstance : existingProcessInstances) {
+                    if (DateUtils.dateFormatSort(existingProcessInstance.getCreatedAt()).equals(DateUtils.dateFormatSort(workFlowPayLoad.getCreationDate()))) {
+                        found = true;
+                        break;
                     }
                 }
-                if(!found) {
-                    filteredWorkFlowPayloads.add(workFlowPayLoad);
-                }
             }
-            return filteredWorkFlowPayloads;
-
+            if (!found) {
+                filteredWorkFlowPayloads.add(workFlowPayLoad);
+            }
         }
+        return filteredWorkFlowPayloads;
+
+    }
+    /*
     public void uploadDataToConvox(ConvoxDTO convoxDTO) {
         log.info("Calling convox upload data API for ticketId {}, convoxDTO {}", convoxDTO.getPitId(), convoxDTO);
         ConvoxDataUploadDTO convoxDataUploadDTO = new ConvoxDataUploadDTO();

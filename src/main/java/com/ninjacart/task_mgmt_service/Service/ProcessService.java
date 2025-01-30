@@ -1,6 +1,8 @@
 package com.ninjacart.task_mgmt_service.Service;
 import com.ninjacart.task_mgmt_service.Exception.CyborgException;
 
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 
 import com.ninjacart.task_mgmt_service.entity.Process;
@@ -20,8 +22,11 @@ public interface ProcessService {
 
     Process getProcessByName(String name);
 
-    List<Process> getAllProcesses();
+    List<Process> getAllProcesses(Pageable pageable);
+
     List<ProcessDTOV2> getProcessList();
+
+    void softDelete(Integer id) throws CyborgException;
 
 }
 

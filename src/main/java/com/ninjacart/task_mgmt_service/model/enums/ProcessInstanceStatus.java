@@ -1,5 +1,7 @@
 package com.ninjacart.task_mgmt_service.model.enums;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -25,6 +27,7 @@ public enum ProcessInstanceStatus {
     public int getCode() {
         return code;
     }
+
 
     public String getText() {
         return text;

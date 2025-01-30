@@ -5,6 +5,7 @@ import com.ninjacart.task_mgmt_service.model.ProcessDTOV2;
 import com.ninjacart.task_mgmt_service.model.enums.ProcessEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.ninjacart.task_mgmt_service.entity.Process;
+import org.springframework.data.domain.Pageable;
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.*;
@@ -12,6 +13,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.ninjacart.task_mgmt_service.Exception.CyborgException;
 import com.ninjacart.task_mgmt_service.Exception.BadRequestException;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,32 +28,33 @@ public class ProcessServiceImpl implements ProcessService {
     @Override
     public Process getProcessById(Integer id) {
         log.info("Fetching process with ID: {}", id);
-        return processRepository.findById(id).orElse(null);
+        return processRepository.findByIdAndDeletedFalse(id);  // Ensure deleted=false for fetching
     }
 
     // By name
     @Override
     public Process getProcessByName(String name) {
         log.info("Fetching process with name: {}", name);
-        return processRepository.findByName(name);
+        return processRepository.findByNameAndDeletedFalse(name);  // Ensure deleted=false for fetching
     }
-
+    //applied pagination to get all processes for efficieny
     @Override
-    public List<Process> getAllProcesses() {
-        log.info("Fetching all processes");
-        return processRepository.findAll();
+    public List<Process> getAllProcesses(Pageable pageable) {
+        log.info("Fetching all processes with pagination");
+        Page<Process> processPage = processRepository.findAllByDeletedFalse(pageable); // Ensure deleted=false
+        return processPage.getContent(); // Get the content (list of processes) from the Page
     }
 
     @Override
     public List<Process> getProcessesByIds(List<Integer> processIds) {
-        log.info("Fetching processes with IDs: {}", processIds);
-        return processRepository.findByIdInAndDeleted(processIds, (byte) 0);
+        log.info("Fetching processes w ith IDs: {}", processIds);
+        return processRepository.findByIdInAndDeletedFalse(processIds); // Ensure deleted=false for fetching
     }
 
     @Override
     public List<Process> getProcessesByNames(List<String> processNames) {
         log.info("Fetching processes with names: {}", processNames);
-        return processRepository.findByNameInAndDeleted(processNames, (byte) 0);
+        return processRepository.findByNameInAndDeletedFalse(processNames);  // Ensure deleted=false for fetching
     }
 
     @Override
@@ -178,6 +181,8 @@ public class ProcessServiceImpl implements ProcessService {
         }
         return true; // Return true if all fields are valid
     }
+
+
     //used stream,.tolist() for immutability
     @Override
     public List<ProcessDTOV2> getProcessList() {
@@ -190,5 +195,19 @@ public class ProcessServiceImpl implements ProcessService {
                 .toList(); // Efficiently collects the stream into an immutable list
     }
 
+    // Soft delete process by ID i.e,will not del from db but we cant fetch its id after deletion implemented using deletd bit=true
+    @Override
+    public void softDelete(Integer id) throws CyborgException {
+        log.info("Soft deleting process with ID: {}", id);
 
-}
+        // Check if process exists
+        processRepository.findById(id).ifPresentOrElse(process -> {
+            process.setDeleted((byte) 1);  // Set the 'deleted' flag to 1 (soft delete)
+            processRepository.save(process);
+            log.info("Process with ID: {} soft deleted successfully", id);
+        }, () -> {
+            log.error("Process with ID: {} not found", id);
+
+        });
+    }
+    }

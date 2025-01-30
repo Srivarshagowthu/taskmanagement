@@ -1,4 +1,4 @@
-package com.ninjacart.task_mgmt_service.Service;
+/*package com.ninjacart.task_mgmt_service.Service;
 
 import com.ninjacart.task_mgmt_service.model.User;
 import jakarta.servlet.http.HttpServletRequest;
@@ -48,10 +48,10 @@ public class RestClientHelper {
     }
 
     public RestClientHelper withAuth(User user) {
-        return withBasicAuth(user.getName(), user.getCredentials().toString());
+        return withBasicAuth(user.getName());
     }
 
-    public RestClientHelper withBasicAuth(String userName, String password) {
+    public RestClientHelper withBasicAuth(String userName) {
         String auth = userName + ":" + password;
         String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.US_ASCII));
         httpHeaders.add(HttpHeaders.AUTHORIZATION, HEADER_KEY_BASIC + encodedAuth);
@@ -61,4 +61,4 @@ public class RestClientHelper {
     public HttpHeaders build() {
         return this.httpHeaders;
     }
-}
+}*/

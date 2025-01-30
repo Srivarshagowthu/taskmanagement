@@ -5,21 +5,24 @@ import com.ninjacart.task_mgmt_service.model.ApiResponse;
 import com.ninjacart.task_mgmt_service.model.ProcessDTOV2;
 import com.ninjacart.task_mgmt_service.model.ResponseUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.ninjacart.task_mgmt_service.entity.Process;
 import com.ninjacart.task_mgmt_service.Exception.CyborgException;
 import lombok.extern.slf4j.Slf4j;
 
-
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * ProcessController manages process-related operations
+ */
 @RestController
 @RequestMapping("/process")
 @Consumes(javax.ws.rs.core.MediaType.APPLICATION_JSON)
@@ -30,12 +33,17 @@ public class ProcessController {
     @Autowired
     private ProcessService processService;
 
-    // Get process by ID
+    /**
+     * GET /process/id/{id} : Get a process by its ID
+     *
+     * @param id (required) - Process ID
+     * @return Process details if found (status code 200), otherwise 404
+     */
     @GetMapping("/id/{id}")
     public ResponseEntity<Process> getProcessById(@PathVariable Integer id) {
         log.info("Fetching process with ID: {}", id);
         Process process = processService.getProcessById(id);
-        if (process==null) {
+        if (process == null) {
             log.warn("Process with ID {} not found", id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
@@ -43,7 +51,12 @@ public class ProcessController {
         return ResponseEntity.ok(process);
     }
 
-    // Get process by Name
+    /**
+     * GET /process/name/{name} : Get a process by its name
+     *
+     * @param name (required) - Process name
+     * @return Process details if found (status code 200), otherwise 404
+     */
     @GetMapping("/name/{name}")
     public ResponseEntity<Process> getProcessByName(@PathVariable String name) {
         log.info("Fetching process with name: {}", name);
@@ -56,27 +69,27 @@ public class ProcessController {
         return ResponseEntity.ok(process);
     }
 
-    // Fetch all processes
+    /**
+     * GET /process/all?page=x&size=x : Fetch all processes with pagination
+     *
+     * @param page (optional) - Page number (default 0)
+     * @param size (optional) - Number of items per page (default 10)
+     * @return List of processes (status code 200)
+     */
     @GetMapping("/all")
-    public ResponseEntity<List<Process>> getAllProcesses() {
-        log.info("Fetching all processes");
-        List<Process> processes = processService.getAllProcesses();
-        if (processes.isEmpty()) {
-            log.warn("No processes found");
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();  // Returns 204 if no processes are found
-        }
-        log.info("Fetched {} processes", processes.size());
-        return ResponseEntity.ok(processes);  // Returns the list with 200 OK status
+    public List<Process> getAllProcesses(@RequestParam(defaultValue = "0") int page,
+                                         @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return processService.getAllProcesses(pageable);
     }
 
-    /*@GetMapping("/task/{id}")
-    public ProcessTask getProcessTaskById(@PathVariable("id") int id) {
-        log.info("Fetching process task with ID: {}", id);
-        ProcessTask processTask = processService.getProcessTaskById(id);
-        return processTask;
-    }*/
-
-    // Create new processes
+    /**
+     * POST /process : Create new processes
+     *
+     * @param processes (required) - List of processes to create
+     * @return API response containing created processes (status code 200)
+     * @throws CyborgException if an error occurs
+     */
     @PostMapping
     public ApiResponse createProcesses(@RequestBody List<Process> processes) throws CyborgException {
         log.info("Creating processes: {}", processes.size());
@@ -85,7 +98,13 @@ public class ProcessController {
         return response;
     }
 
-    // Batch update processes
+    /**
+     * PUT /process/batchUpdate : Batch update processes
+     *
+     * @param processes (required) - List of processes to update
+     * @return Updated list of processes (status code 200), or 204 if no updates
+     * @throws CyborgException if an error occurs
+     */
     @PutMapping("/batchUpdate")
     public ResponseEntity<List<Process>> updateProcesses(@RequestBody List<Process> processes) throws CyborgException {
         log.info("Updating processes, total to update: {}", processes.size());
@@ -98,6 +117,31 @@ public class ProcessController {
         return ResponseEntity.ok(updatedProcesses);
     }
 
+    /**
+     * DELETE /process/delete/{id} : Soft delete a process by ID
+     *
+     * @param id (required) - Process ID to delete
+     * @return API response confirming deletion (status code 200) or error (404)
+     */
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<ApiResponse> softDelete(@PathVariable Integer id) {
+        try {
+            log.info("Request to soft delete process with ID: {}", id);
+            processService.softDelete(id);
+            ApiResponse response = ResponseUtil.jsonResponse("Process soft deleted successfully.");
+            return ResponseEntity.ok(response);
+        } catch (CyborgException e) {
+            log.error("Error during soft delete", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ResponseUtil.jsonResponse("Error: Process not found"));
+        }
+    }
+
+    /**
+     * GET /process/list : Fetch the list of all process DTOs
+     *
+     * @return List of ProcessDTOV2 objects (status code 200)
+     */
     @GetMapping("/list")
     public List<ProcessDTOV2> getProcessList() {
         log.info("Fetching process list");

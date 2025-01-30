@@ -17,6 +17,7 @@ import lombok.experimental.SuperBuilder;
 @JsonIgnoreProperties(ignoreUnknown = true)
 //this is generic way to represent the api response after successfull api call
 public class ApiResponse<T>  {
+    @Builder.Default
     private boolean success=true;
     private String errorCode;
     private String errorMessage;

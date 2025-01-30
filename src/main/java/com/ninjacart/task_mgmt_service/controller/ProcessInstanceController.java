@@ -8,6 +8,7 @@ import com.ninjacart.task_mgmt_service.model.ApiResponse;
 import com.ninjacart.task_mgmt_service.model.ResponseUtil;
 import com.ninjacart.task_mgmt_service.model.User;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-
+@Slf4j
 @RestController
 @RequestMapping("/processInstances")
 public class ProcessInstanceController {
@@ -26,9 +27,10 @@ public class ProcessInstanceController {
     @Autowired
     private ProcessInstanceServiceHelper processInstanceServiceHelper;
 
-    @PostMapping
+    @PostMapping("/create")
     public ApiResponse createProcess(User principal, HttpServletRequest request,
                                      @RequestBody List<WorkFlowPayLoad> workFlowPayLoads) throws Exception {
+        log.info("Request received in controller: {}");
 
         List<ProcessInstanceDTO> processInstanceDTOList = processInstanceService.createProcess(principal,request,workFlowPayLoads);
 

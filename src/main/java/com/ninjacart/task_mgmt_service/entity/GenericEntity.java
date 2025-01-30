@@ -25,6 +25,7 @@ public interface GenericEntity<PK extends Serializable> extends Serializable {
 
     void setUpdatedBy(int updatedBy);
 
+
     byte getDeleted();
 
     void setDeleted(byte deleted);
