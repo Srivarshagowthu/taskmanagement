@@ -1,0 +1,10 @@
+com/varsha/process/api/ProcessApiController.class
+com/varsha/process/api/ProcessApi$1.class
+com/varsha/process/api/ApiUtil.class
+com/varsha/process/delegate/ProcessDelegateImpl.class
+com/varsha/process/repository/ProcessRepository.class
+com/varsha/process/api/ProcessApiDelegate.class
+com/varsha/process/api/ProcessApiController$1.class
+com/varsha/process/dto/Process.class
+com/varsha/process/ProcessApplication.class
+com/varsha/process/api/ProcessApi.class

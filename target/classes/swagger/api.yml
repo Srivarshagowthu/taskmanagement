@@ -1,0 +1,101 @@
+openapi: "3.0.1"
+info:
+  title: Process API
+  description: API to manage processes
+  version: "1"
+
+paths:
+  /process:
+    post:
+      summary: Create a new process
+      operationId: createProcess
+      requestBody:
+        description: Process to be created
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Process'
+      responses:
+        '201':
+          description: Process created successfully
+        '400':
+          description: Invalid input data
+
+  /process/{id}:
+    get:
+      summary: Get a process by ID
+      operationId: getProcess
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Process retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Process'
+        '404':
+          description: Process not found
+
+    put:
+      summary: Update a process by ID
+      operationId: updateProcess
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: Process data to be updated
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Process'
+      responses:
+        '200':
+          description: Process updated successfully
+        '400':
+          description: Invalid input data
+        '404':
+          description: Process not found
+
+    delete:
+      summary: Delete a process by ID
+      operationId: deleteProcess
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Process deleted successfully
+        '404':
+          description: Process not found
+components:
+  schemas:
+    Process:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Sample Process"
+        description:
+          type: string
+          example: "This is a sample process description."
+        title:
+          type: string
+          example: "Sample Process Title"
+      required:
+        - name
+        - description
+        - title
