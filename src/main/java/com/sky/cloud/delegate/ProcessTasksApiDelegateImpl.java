@@ -1,128 +1,173 @@
 package com.sky.cloud.delegate;
 
-import com.sky.cloud.api.ApiUtil;
 import com.sky.cloud.api.ProcessTasksApiDelegate;
 
+import com.sky.cloud.dto.ProcessInstanceTaskDTO;
 import com.sky.cloud.dto.ProcessTaskDTO;
 import com.sky.cloud.repository.ProcessTaskRepository;
-import org.apache.commons.lang3.ObjectUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.BeanWrapper;
+import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.MediaType;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 
 @Service
+@Slf4j
 public class ProcessTasksApiDelegateImpl implements ProcessTasksApiDelegate {
+@Autowired
+private RedissonClient redissonClient;
+  private final ProcessTaskRepository processTaskRepository;
 
-    private  final ProcessTaskRepository processTaskRepository;
-    @Autowired
-    public ProcessTasksApiDelegateImpl(ProcessTaskRepository processRepository) {
-        this.processTaskRepository = processRepository;
+  @Autowired
+  public ProcessTasksApiDelegateImpl(ProcessTaskRepository processRepository) {
+    this.processTaskRepository = processRepository;
+  }
+
+  @Override
+  public ResponseEntity<ProcessTaskDTO> getProcessTaskById(Integer ptid) {
+
+    ProcessTaskDTO processTaskDTO = processTaskRepository.findByIdAndDeleted(ptid, (int) 0);
+
+    if (processTaskDTO != null) {
+
+      return ResponseEntity.ok(processTaskDTO);
+    } else {
+      return ResponseEntity.notFound().build();
+    }
+  }
+//  Prevents duplicate task creation when multiple users send the same tasks.
+//Ensures consistency by locking each task individually.
+// Handles concurrent API calls effectively using Redis distributed locking.
+  @Override
+  public ResponseEntity<List<ProcessTaskDTO>> createProcessTasks(@RequestBody List<ProcessTaskDTO> processDTOs) {
+    if (processDTOs == null || processDTOs.isEmpty()) {
+
+      return ResponseEntity.badRequest().body(null); // Return 400 if input is invalid
     }
 
-    @Override
-    public ResponseEntity<ProcessTaskDTO> getProcessTaskById(Integer ptid) {
+    List<ProcessTaskDTO> validProcessTasks = new ArrayList<>();
+    for (ProcessTaskDTO processDTO : processDTOs) {
+      if (processDTO.getName() == null || processDTO.getDescription() == null) {
 
-        ProcessTaskDTO processTaskDTO = processTaskRepository.findByIdAndDeleted(ptid, (int) 0);
-
-        if (processTaskDTO != null) {
-            return ResponseEntity.ok(processTaskDTO);  // Return 200 with task data
-        } else {
-            return ResponseEntity.notFound().build();  // Return 404 if task not found or deleted
+        return ResponseEntity.badRequest().body(null); // Return 400
+      }
+      if (processDTO.getCreatedAt() == null) {
+        processDTO.setCreatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toOffsetDateTime());
+      }
+      processDTO.setUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toOffsetDateTime());
+      processDTO.setDeleted((int) 0);
+      String lockkey = "Process Task Lock " + processDTO.getTaskId();
+      RLock rLock = redissonClient.getFairLock(lockkey);
+      try{
+        if (rLock.tryLock(5, 10, TimeUnit.SECONDS)) {
+          try{
+            validProcessTasks.add(processDTO);
+            log.info("Locked and Processing Task{}", processDTO.getTaskId());
+          }finally{
+            rLock.unlock();
+          }
+        }else{
+log.info("Could Not Acquire lock for process task with process task id{}", processDTO.getTaskId());
         }
+      }catch (InterruptedException e){
+Thread.currentThread().interrupt();
+        log.info("Error acquiring lock for process task with process task id{}", processDTO.getTaskId());
+      }
+
+
     }
 
-    @Override
-    public ResponseEntity<List<ProcessTaskDTO>> createProcessTasks(List<ProcessTaskDTO> processDTOs) {
+    List<ProcessTaskDTO> savedProcessDTOs = processTaskRepository.saveAll(validProcessTasks);
+    return ResponseEntity.status(201).body(savedProcessDTOs);
+  }
 
-        if (processDTOs == null || processDTOs.isEmpty()) {
-            return ResponseEntity.badRequest().build();  // Return 400 if input is invalid
-        }
+  @Override
+  public ResponseEntity<String> deleteProcessTaskById(Integer ptid) {
+    return processTaskRepository
+            .findById(ptid)
+            .map(task -> {
+              task.setDeleted(1); // Mark as deleted
+              processTaskRepository.save(task); // Save the updated task with deleted flag
 
-        List<ProcessTaskDTO> savedProcessDTOs = new ArrayList<>();
-        for (ProcessTaskDTO processDTO : processDTOs) {
-            if (processDTO.getName() == null || processDTO.getDescription() == null) {
-                return ResponseEntity.badRequest().build();  // Return 400 if name or description is missing
-            }
+              return ResponseEntity.ok("Task deleted successfully"); // Return success message
+            })
+            .orElseGet(() -> {
 
-            // Set 'createdAt' only if it's not already set (for new entries)
-            if (processDTO.getCreatedAt() == null) {
-                processDTO.setCreatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toOffsetDateTime());  // Set createdAt to current time in IST
-            }
+              return ResponseEntity.notFound().build(); // Return 404 if task not found
+            });
+  }
 
-            // Always set 'updatedAt' to the current time in IST
-            processDTO.setUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toOffsetDateTime());  // Set updatedAt to current time in IST
+  @Override
+  public ResponseEntity<List<ProcessTaskDTO>> getAllProcessTasks(Integer page, Integer size) {
 
-            savedProcessDTOs.add(processTaskRepository.save(processDTO));  // Save each process task
-        }
 
-        return ResponseEntity.status(201).body(savedProcessDTOs);  // Return 201 Created with saved tasks
+    Page<ProcessTaskDTO> paginatedTasks =
+            processTaskRepository.findByDeletedNot((int) 1, PageRequest.of(page, size));
+
+    if (paginatedTasks.isEmpty()) {
+
+      return ResponseEntity.noContent().build(); // Return 204 if no tasks found
     }
 
+    return ResponseEntity.ok(paginatedTasks.getContent()); // Return 200 with list of tasks
+  }
 
-    @Override
-    public ResponseEntity<String> deleteProcessTaskById(Integer ptid) {
-        return processTaskRepository.findById(ptid)
-                .map(task -> {
-                    task.setDeleted(1);  // Mark as deleted
-                    processTaskRepository.save(task);  // Save the updated task with deleted flag
-                    return ResponseEntity.ok("Task deleted successfully");  // Return success message
-                })
-                .orElseGet(() -> ResponseEntity.notFound().build());  // Return 404 if task not found
+  @Override
+  public ResponseEntity<ProcessTaskDTO> updateProcessTask(Integer ptid, ProcessTaskDTO updatedProcessTask) {
+
+
+    ProcessTaskDTO existingTask = processTaskRepository.findById(ptid).orElse(null);
+
+    if (existingTask == null) {
+
+      return ResponseEntity.notFound().build();
     }
-    @Override
-    public ResponseEntity<List<ProcessTaskDTO>> getAllProcessTasks(Integer page, Integer size) {
 
+    if (existingTask.getDeleted() == 1) {
 
-        // Fetch paginated results from the repository
-        // Fetch paginated results where deleted flag is not 1 (not deleted)
-        Page<ProcessTaskDTO> paginatedTasks = processTaskRepository.findByDeletedNot((int) 1, PageRequest.of(page, size));
-
-
-        if (paginatedTasks.isEmpty()) {
-            return ResponseEntity.noContent().build();  // Return 204 if no tasks found
-        }
-        return ResponseEntity.ok(paginatedTasks.getContent());  // Return 200 with list of tasks
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
     }
-//    @Override
-//    public ResponseEntity<ProcessTaskDTO> updateProcessTask(Integer ptid, ProcessTaskDTO updatedProcessTask) {
-//
-//        ProcessTaskDTO existingTask = processTaskRepository.findByIdAndDeleted(ptid, (byte) 0);
-//
-//        if (existingTask != null) {
-//            existingTask.setName(updatedProcessTask.getName());  // Update name
-//            existingTask.setDescription(updatedProcessTask.getDescription());  // Update description
-//            existingTask.setDefaultPriority(updatedProcessTask.getDefaultPriority());  // Update defaultPriority
-//            existingTask.setMinutesToAssign(updatedProcessTask.getMinutesToAssign());  // Update minutesToAssign
-//            existingTask.setRequestParam(updatedProcessTask.getRequestParam());  // Update requestParam
-//            existingTask.setUserId(updatedProcessTask.getUserId());  // Update userId
-//            existingTask.setFilter(updatedProcessTask.getFilter());  // Update filter
-//            existingTask.setMinutesToComplete(updatedProcessTask.getMinutesToComplete());  // Update minutesToComplete
-//            existingTask.setCreatedBy(updatedProcessTask.getCreatedBy());  // Update createdBy
-//            existingTask.setTaskId(updatedProcessTask.getTaskId());  // Update taskId
-//
-//            // Do not change the 'createdAt' if it's already set; only update 'updatedAt'
-//            // Update 'updatedAt' to current time in IST
-//            existingTask.setUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toOffsetDateTime());  // Update updatedAt to current time in IST
-//
-//            // Save the updated task to the repository
-//            ProcessTaskDTO savedTask = processTaskRepository.save(existingTask);
-//
-//            return ResponseEntity.ok(savedTask);  // Return 200 with updated task data
-//        } else {
-//            return ResponseEntity.notFound().build();  // Return 404 if task not found or deleted
-//        }
-//    }
+
+    BeanUtils.copyProperties(updatedProcessTask, existingTask, getNullPropertyNames(updatedProcessTask));
+    existingTask.setUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toOffsetDateTime());
+
+    ProcessTaskDTO savedTask = processTaskRepository.save(existingTask);
 
 
+    return ResponseEntity.ok(savedTask);
+  }
 
+  // Ignore null properties during BeanUtils.copyProperties
+  private String[] getNullPropertyNames(ProcessTaskDTO source) {
+    final BeanWrapper src = new BeanWrapperImpl(source);
+    java.beans.PropertyDescriptor[] pds = src.getPropertyDescriptors();
+    Set<String> nullPropertyNames = new HashSet<>();
 
+    for (java.beans.PropertyDescriptor pd : pds) {
+      if (src.getPropertyValue(pd.getName()) == null) {
+        nullPropertyNames.add(pd.getName());
+      }
+    }
+
+    return nullPropertyNames.toArray(new String[0]);
+  }
+  //so i want to have a user table also where when i add
 }
