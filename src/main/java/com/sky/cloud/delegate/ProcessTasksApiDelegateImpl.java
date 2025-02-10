@@ -4,9 +4,11 @@ import com.sky.cloud.api.ProcessTasksApiDelegate;
 
 import com.sky.cloud.dto.ProcessInstanceTaskDTO;
 import com.sky.cloud.dto.ProcessTaskDTO;
+
 import com.sky.cloud.repository.ProcessTaskRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
+
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeanWrapper;
@@ -18,28 +20,24 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.context.request.NativeWebRequest;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 
 @Service
 @Slf4j
 public class ProcessTasksApiDelegateImpl implements ProcessTasksApiDelegate {
-@Autowired
-private RedissonClient redissonClient;
-  private final ProcessTaskRepository processTaskRepository;
-
   @Autowired
-  public ProcessTasksApiDelegateImpl(ProcessTaskRepository processRepository) {
-    this.processTaskRepository = processRepository;
-  }
+private RedissonClient redissonClient;
+@Autowired
+  private ProcessTaskRepository processTaskRepository;
+
 
   @Override
   public ResponseEntity<ProcessTaskDTO> getProcessTaskById(Integer ptid) {
@@ -92,7 +90,6 @@ Thread.currentThread().interrupt();
         log.info("Error acquiring lock for process task with process task id{}", processDTO.getTaskId());
       }
 
-
     }
 
     List<ProcessTaskDTO> savedProcessDTOs = processTaskRepository.saveAll(validProcessTasks);
@@ -118,9 +115,8 @@ Thread.currentThread().interrupt();
   @Override
   public ResponseEntity<List<ProcessTaskDTO>> getAllProcessTasks(Integer page, Integer size) {
 
-
     Page<ProcessTaskDTO> paginatedTasks =
-            processTaskRepository.findByDeletedNot((int) 1, PageRequest.of(page, size));
+        processTaskRepository.findByDeletedNot((int) 1, PageRequest.of(page, size));
 
     if (paginatedTasks.isEmpty()) {
 
@@ -169,5 +165,17 @@ Thread.currentThread().interrupt();
 
     return nullPropertyNames.toArray(new String[0]);
   }
-  //so i want to have a user table also where when i add
+
+
+  @Override
+  public ResponseEntity<List<ProcessTaskDTO>> getByProcessId(Integer id, Integer page, Integer size) {
+    Page<ProcessTaskDTO> paginatedTasks =
+            processTaskRepository.findByProcessIdAndDeleted(id, 0, PageRequest.of(page, size));
+
+    if (paginatedTasks.isEmpty()) {
+      return ResponseEntity.noContent().build(); // 204
+    }
+
+    return ResponseEntity.ok(paginatedTasks.getContent()); // 200
+  }
 }

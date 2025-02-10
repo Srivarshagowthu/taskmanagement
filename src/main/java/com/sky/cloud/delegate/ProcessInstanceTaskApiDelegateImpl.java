@@ -31,13 +31,13 @@ import java.util.*;
 @Slf4j
 public class ProcessInstanceTaskApiDelegateImpl implements ProcessInstanceTasksApiDelegate {
 private ProcessInstanceTaskDTO processInstanceTaskDTO;
+@Autowired
     private  ProcessInstanceTaskRepository processInstanceTaskRepository;
 
     @Autowired
     public ProcessInstanceTaskApiDelegateImpl(ProcessInstanceTaskRepository processInstanceTaskRepository) {
         this.processInstanceTaskRepository = processInstanceTaskRepository;
     }
-
     @Override
     public ResponseEntity<ProcessInstanceTaskDTO> getProcessInstanceTaskById(Integer id) {
 

@@ -1,13 +1,17 @@
 package com.sky.cloud.config;
 
+import jakarta.persistence.Entity;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
+
 @Slf4j
 @Configuration
+@Component
 public class RedissonConfig {
     @Bean
     public RedissonClient redissonClient(){
