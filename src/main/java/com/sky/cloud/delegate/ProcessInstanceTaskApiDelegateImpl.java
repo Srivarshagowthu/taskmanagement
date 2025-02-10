@@ -26,140 +26,145 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.*;
 
-
 @Service
 @Slf4j
 public class ProcessInstanceTaskApiDelegateImpl implements ProcessInstanceTasksApiDelegate {
-private ProcessInstanceTaskDTO processInstanceTaskDTO;
-@Autowired
-    private  ProcessInstanceTaskRepository processInstanceTaskRepository;
+  private ProcessInstanceTaskDTO processInstanceTaskDTO;
+  @Autowired private ProcessInstanceTaskRepository processInstanceTaskRepository;
 
-    @Autowired
-    public ProcessInstanceTaskApiDelegateImpl(ProcessInstanceTaskRepository processInstanceTaskRepository) {
-        this.processInstanceTaskRepository = processInstanceTaskRepository;
+  @Autowired
+  public ProcessInstanceTaskApiDelegateImpl(
+      ProcessInstanceTaskRepository processInstanceTaskRepository) {
+    this.processInstanceTaskRepository = processInstanceTaskRepository;
+  }
+
+  @Override
+  public ResponseEntity<ProcessInstanceTaskDTO> getProcessInstanceTaskById(Integer id) {
+
+    ProcessInstanceTaskDTO processInstanceTaskDTO =
+        processInstanceTaskRepository.findByIdAndDeleted(id, (byte) 0);
+    if (processInstanceTaskDTO == null) {
+
+      return ResponseEntity.notFound().build();
     }
-    @Override
-    public ResponseEntity<ProcessInstanceTaskDTO> getProcessInstanceTaskById(Integer id) {
+    return ResponseEntity.ok(processInstanceTaskDTO);
+  }
 
+  @Override
+  public ResponseEntity<List<ProcessInstanceTaskDTO>> getAllProcessInstanceTasks(
+      Integer page, Integer size) {
 
-        ProcessInstanceTaskDTO processInstanceTaskDTO = processInstanceTaskRepository.findByIdAndDeleted(id, (byte) 0);
-        if (processInstanceTaskDTO == null) {
+    Page<ProcessInstanceTaskDTO> paginatedTasks =
+        processInstanceTaskRepository.findByDeletedNot((int) 1, PageRequest.of(page, size));
 
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(processInstanceTaskDTO);
-    }
+    if (paginatedTasks.isEmpty()) {
 
-    @Override
-    public ResponseEntity<List<ProcessInstanceTaskDTO>> getAllProcessInstanceTasks(Integer page, Integer size) {
-
-
-        Page<ProcessInstanceTaskDTO> paginatedTasks = processInstanceTaskRepository.findByDeletedNot((int) 1, PageRequest.of(page, size));
-
-        if (paginatedTasks.isEmpty()) {
-
-            return ResponseEntity.noContent().build(); // Return 204 if no tasks found
-        }
-
-        return ResponseEntity.ok(paginatedTasks.getContent());
-    }
-
-    @Override
-    public ResponseEntity<ProcessInstanceTaskDTO> createProcessInstanceTasks(@RequestBody ProcessInstanceTaskDTO processInstanceTaskDTO) {
-
-
-        if (processInstanceTaskDTO == null || processInstanceTaskDTO.getName() == null || processInstanceTaskDTO.getDescription() == null) {
-
-            return ResponseEntity.badRequest().build(); // Return 400 if input is invalid
-        }
-
-        if (processInstanceTaskDTO.getCreatedAt() == null) {
-            processInstanceTaskDTO.setCreatedAt(OffsetDateTime.now(ZoneOffset.ofHoursMinutes(5, 30))); // Set createdAt to current time (IST)
-        }
-        processInstanceTaskDTO.setUpdatedAt(OffsetDateTime.now(ZoneOffset.ofHoursMinutes(5, 30))); // Set updatedAt to current time (IST)
-
-        processInstanceTaskDTO.setDeleted((int) 0);
-
-        ProcessInstanceTaskDTO savedTask = processInstanceTaskRepository.save(processInstanceTaskDTO);
-
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedTask); // Return 201 Created with saved task
+      return ResponseEntity.noContent().build(); // Return 204 if no tasks found
     }
 
-    @Override
-    public ResponseEntity<ProcessInstanceTaskDTO> updateProcessInstanceTask(Integer id, ProcessInstanceTaskDTO updatedProcessInstanceTask) {
+    return ResponseEntity.ok(paginatedTasks.getContent());
+  }
 
-        ProcessInstanceTaskDTO existingTask = processInstanceTaskRepository.findByIdAndDeleted(id, 0);
+  @Override
+  public ResponseEntity<ProcessInstanceTaskDTO> createProcessInstanceTasks(
+      @RequestBody ProcessInstanceTaskDTO processInstanceTaskDTO) {
 
-        if (existingTask == null) {
+    if (processInstanceTaskDTO == null
+        || processInstanceTaskDTO.getName() == null
+        || processInstanceTaskDTO.getDescription() == null) {
 
-            return ResponseEntity.notFound().build();
-        }
-
-        // Copy non-null properties while preserving 'createdAt' & preventing 'deleted' modifications
-        BeanUtils.copyProperties(updatedProcessInstanceTask, existingTask, getNullPropertyNames(updatedProcessInstanceTask, "createdAt", "deleted"));
-
-        existingTask.setUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toOffsetDateTime());
-
-        ProcessInstanceTaskDTO savedTask = processInstanceTaskRepository.save(existingTask);
-
-
-        return ResponseEntity.ok(savedTask);
+      return ResponseEntity.badRequest().build(); // Return 400 if input is invalid
     }
 
-    private String[] getNullPropertyNames(ProcessInstanceTaskDTO source, String... excludeFields) {
-        final BeanWrapper src = new BeanWrapperImpl(source);
-        Set<String> nullPropertyNames = new HashSet<>(Arrays.asList(excludeFields));
+    if (processInstanceTaskDTO.getCreatedAt() == null) {
+      processInstanceTaskDTO.setCreatedAt(
+          OffsetDateTime.now(
+              ZoneOffset.ofHoursMinutes(5, 30))); // Set createdAt to current time (IST)
+    }
+    processInstanceTaskDTO.setUpdatedAt(
+        OffsetDateTime.now(
+            ZoneOffset.ofHoursMinutes(5, 30))); // Set updatedAt to current time (IST)
 
-        for (PropertyDescriptor pd : src.getPropertyDescriptors()) {
-            if (src.getPropertyValue(pd.getName()) == null) {
-                nullPropertyNames.add(pd.getName());
-            }
-        }
+    processInstanceTaskDTO.setDeleted((int) 0);
 
-        return nullPropertyNames.toArray(new String[0]);
+    ProcessInstanceTaskDTO savedTask = processInstanceTaskRepository.save(processInstanceTaskDTO);
+
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(savedTask); // Return 201 Created with saved task
+  }
+
+  @Override
+  public ResponseEntity<ProcessInstanceTaskDTO> updateProcessInstanceTask(
+      Integer id, ProcessInstanceTaskDTO updatedProcessInstanceTask) {
+
+    ProcessInstanceTaskDTO existingTask = processInstanceTaskRepository.findByIdAndDeleted(id, 0);
+
+    if (existingTask == null) {
+
+      return ResponseEntity.notFound().build();
     }
 
-    @Override
-    public ResponseEntity<String> deleteProcessInstanceTaskById(Integer id) {
+    // Copy non-null properties while preserving 'createdAt' & preventing 'deleted' modifications
+    BeanUtils.copyProperties(
+        updatedProcessInstanceTask,
+        existingTask,
+        getNullPropertyNames(updatedProcessInstanceTask, "createdAt", "deleted"));
 
+    existingTask.setUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toOffsetDateTime());
 
-        return processInstanceTaskRepository
-                .findById(id)
-                .map(
-                        task -> {
-                            task.setDeleted(1); // Mark as deleted
-                            processInstanceTaskRepository.save(task); // Save the updated task with deleted flag
+    ProcessInstanceTaskDTO savedTask = processInstanceTaskRepository.save(existingTask);
 
-                            return ResponseEntity.ok("Task deleted successfully"); // Return success message
-                        })
-                .orElseGet(() -> {
+    return ResponseEntity.ok(savedTask);
+  }
 
-                    return ResponseEntity.notFound().build();
-                });
+  private String[] getNullPropertyNames(ProcessInstanceTaskDTO source, String... excludeFields) {
+    final BeanWrapper src = new BeanWrapperImpl(source);
+    Set<String> nullPropertyNames = new HashSet<>(Arrays.asList(excludeFields));
+
+    for (PropertyDescriptor pd : src.getPropertyDescriptors()) {
+      if (src.getPropertyValue(pd.getName()) == null) {
+        nullPropertyNames.add(pd.getName());
+      }
     }
 
-//    @Override
-//    public void updateTicketStatus( int pitId, UpdateProcessInstanceTaskDTO updateProcessInstanceTaskDTO,String username) throws CustomException {
-//        boolean isTicketGettingAssigned = false;
-//
-//        ProcessInstanceTask processInstanceTask = this.getProcessInstanceTaskById(pitId);
-//        processInstanceTask.setAssignedTo(pitId);
-//
-//
-//
-//        processInstanceTask.setStatus(updateProcessInstanceTaskDTO.getUpdateStatus());
-//        if(updateProcessInstanceTaskDTO.getUpdateStatus() != null && (updateProcessInstanceTaskDTO.getUpdateStatus() == ProcessInstanceTaskStatus.ASSIGNED)) {
-//            isTicketGettingAssigned = true;
-//            processInstanceTask.setAssignedAt(new Date());
-//        }
-//        ProcessInstance processInstance = processInstanceService.getProcessInstanceById(processInstanceTask.getProcessInstanceId());
-//
-//
-//        this.updateProcessInstanceTask(processInstanceTask);
-//        processInstanceService.updateProcessInstance(processInstance);
-//
-//        log.info("For ticketId {}, updated status to {} by user {} {}", pitId, updateProcessInstanceTaskDTO.getUpdateStatus(), pitId,username);
-//    }
+    return nullPropertyNames.toArray(new String[0]);
+  }
+
+  @Override
+  public ResponseEntity<String> deleteProcessInstanceTaskById(Integer id) {
+
+    return processInstanceTaskRepository
+        .findById(id)
+        .map(
+            task -> {
+              task.setDeleted(1); // Mark as deleted
+              processInstanceTaskRepository.save(task); // Save the updated task with deleted flag
+
+              return ResponseEntity.ok("Task deleted successfully"); // Return success message
+            })
+        .orElseGet(
+            () -> {
+              return ResponseEntity.notFound().build();
+            });
+  }
+
+  @Override
+  public ResponseEntity<ProcessInstanceTaskDTO> updateProcessInstanceTaskStatus(Integer id, ProcessInstanceTaskDTO processInstanceTaskDTO) {
+
+    if (id == null || processInstanceTaskDTO.getStatus() == null) {
+      return ResponseEntity.badRequest().body(null);
+    }
+    ProcessInstanceTaskDTO existingTask = processInstanceTaskRepository.findByIdAndDeleted(id, 0);
+
+    if (existingTask == null) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+    }
+
+    existingTask.setStatus(processInstanceTaskDTO.getStatus());
+
+    ProcessInstanceTaskDTO updatedTask = processInstanceTaskRepository.save(existingTask);
+
+    return ResponseEntity.ok(updatedTask);
+  }
+
 }
-

@@ -1,4 +1,4 @@
-openapi: 3.0.0
+openapi: 3.0.1
 info:
   title: ProcessTasks API
   version: "1"
@@ -235,6 +235,31 @@ paths:
               schema:
                 type: string
                 example: "Process Instance Task deleted successfully"
+  /process-instance-tasks/status/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: Unique ID of the process instance task
+        required: true
+        schema:
+          type: integer
+    patch:
+      summary: Update status of a process instance task by ID
+      operationId: updateProcessInstanceTaskStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessInstanceTaskDTO"
+      responses:
+        '200':
+          description: Successfully updated status for  process instance task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessInstanceTaskDTO'
+
 
 components:
   schemas:
@@ -407,9 +432,16 @@ components:
           type: string
           enum:
             - PENDING
-            - IN_PROGRESS
+            - ASSIGNED
+            - REASSIGNED
             - COMPLETED
+            - CLOSED
             - POSTPONED
+            - EXPIRED
+            - APPROVED
+            - SENT_TO_LENDER
+            - DISBURSED
+            - REJECTED
         startDate:
           type: string
           format: date-time

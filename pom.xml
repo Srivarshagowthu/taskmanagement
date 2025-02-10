@@ -19,7 +19,7 @@
 
     <properties>
         <!-- Updated to Java 17 as required by Spring Boot 3.x -->
-        <java.version>17</java.version>
+        <java.version>23</java.version>
     </properties>
 
     <dependencies>

@@ -1,6 +1,5 @@
 package com.sky.cloud.config;
 
-import jakarta.persistence.Entity;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Configuration
-@Component
+
 public class RedissonConfig {
     @Bean
     public RedissonClient redissonClient(){
@@ -19,10 +18,10 @@ public class RedissonConfig {
         config.useSingleServer().setAddress("redis://127.0.0.1:6379");
         RedissonClient redisson = Redisson.create(config);
         if(redisson.getKeys()!=null){
-            log.info(" ✅  Redisson connected successfully to the server ");
+            log.debug(" ✅  Redisson connected successfully to the server ");
         }
         else{
-            log.info("Not connected to the server , sorry sir");
+            log.debug("Not connected to the server");
         }
 return redisson;
     }

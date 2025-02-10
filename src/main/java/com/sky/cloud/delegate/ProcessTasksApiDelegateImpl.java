@@ -78,16 +78,16 @@ private RedissonClient redissonClient;
         if (rLock.tryLock(5, 10, TimeUnit.SECONDS)) {
           try{
             validProcessTasks.add(processDTO);
-            log.info("Locked and Processing Task{}", processDTO.getTaskId());
+            log.debug("Locked and Processing Task{}", processDTO.getTaskId());
           }finally{
             rLock.unlock();
           }
         }else{
-log.info("Could Not Acquire lock for process task with process task id{}", processDTO.getTaskId());
+log.debug("Could Not Acquire lock for process task with process task id{}", processDTO.getTaskId());
         }
       }catch (InterruptedException e){
 Thread.currentThread().interrupt();
-        log.info("Error acquiring lock for process task with process task id{}", processDTO.getTaskId());
+        log.debug("Error acquiring lock for process task with process task id{}", processDTO.getTaskId());
       }
 
     }
