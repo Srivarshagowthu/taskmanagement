@@ -1,0 +1,177 @@
+openapi: '3.0.1'
+info:
+  title: Process Management API
+  description: This API provides management for processes, including retrieval, creation, updating, and deletion of processes.
+  version: '1'
+servers:
+  - url: http://localhost:9077/process
+    description: Local development server
+paths:
+  /process/id/{id}:
+    get:
+      summary: Get a process by ID
+      operationId: getProcessById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the process
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Process found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Process'
+        '404':
+          description: Process not found
+  /process/name/{name}:
+    get:
+      summary: Get a process by name
+      operationId: getProcessByName
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: The name of the process
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Process found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Process'
+        '404':
+          description: Process not found
+  /process/all:
+    get:
+      summary: Fetch all processes with pagination
+      operationId: getAllProcesses
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: List of processes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Process'
+  /process:
+    post:
+      summary: Create new processes
+      operationId: createProcesses
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Process'
+      responses:
+        '200':
+          description: Successfully created processes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /process/batchUpdate:
+    put:
+      summary: Batch update processes
+      operationId: updateProcesses
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Process'
+      responses:
+        '200':
+          description: Processes updated successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Process'
+        '204':
+          description: No processes updated
+  /process/delete/{id}:
+    delete:
+      summary: Soft delete a process by ID
+      operationId: softDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the process to delete
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Process soft deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Process not found
+components:
+  schemas:
+    Process:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: integer
+        domain:
+          type: string
+        active:
+          type: integer
+        referenceType:
+          type: string
+        referenceValue:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: integer
+        updatedBy:
+          type: integer
+        deleted:
+          type: integer
+    ApiResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        status:
+          type: string

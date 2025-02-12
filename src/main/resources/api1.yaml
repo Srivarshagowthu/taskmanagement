@@ -1,0 +1,300 @@
+openapi: '3.0.1'
+info:
+  title: Process Instance API
+  description: API for managing process instances and workflow payloads.
+  version: '1'
+servers:
+  - url: http://localhost:9077/processInstance
+    description: Local development server
+
+paths:
+  /processinstance:
+    post:
+      summary: Create a new process
+      operationId: createProcess
+      requestBody:
+        description: Payload to create a new process instance
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                workFlowPayLoads:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/WorkFlowPayLoad'
+      responses:
+        '200':
+          description: Process instances created successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProcessInstanceDTO'
+        '400':
+          description: Invalid request
+
+  /processinstance/auto_complete:
+    post:
+      summary: Auto complete tickets
+      operationId: autoCompleteTickets
+      requestBody:
+        description: Payload to auto complete the tickets
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoComplete'
+      responses:
+        '200':
+          description: Successfully auto closed
+        '400':
+          description: Invalid ProcessId or Reference
+
+  /processinstance/auto_close:
+    post:
+      summary: Auto close tickets
+      operationId: autoCloseTickets
+      parameters:
+        - name: processIds
+          in: query
+          description: Process IDs to be auto closed
+          required: true
+          schema:
+            type: string
+        - name: statuses
+          in: query
+          description: Filter tickets by statuses
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully auto closed
+
+  /processinstance/auto_expire:
+    post:
+      summary: Auto expire tickets
+      operationId: autoExpireTickets
+      responses:
+        '200':
+          description: Successfully expired
+
+  /processinstance/update:
+    post:
+      summary: Update ticket details
+      operationId: updateTicket
+      requestBody:
+        description: Payload for updating ticket
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateActionObject'
+      parameters:
+        - name: createNew
+          in: query
+          description: Flag to create a new ticket or update an existing one
+          required: true
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successfully updated ticket
+        '400':
+          description: Invalid ProcessId or Reference
+
+  /processinstance/details/{processInstanceId}:
+    get:
+      summary: Get details of a specific process instance
+      operationId: getProcessInstanceDetails
+      parameters:
+        - name: processInstanceId
+          in: path
+          description: Process instance ID to fetch details for
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Process instance details retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProcessInstanceTaskDTO'
+
+  /processinstance/status/list:
+    get:
+      summary: Get list of process instance statuses
+      operationId: getProcessInstanceStatuses
+      responses:
+        '200':
+          description: List of process instance statuses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProcessInstanceStatus'
+
+  /processinstance/switchAssignee:
+    post:
+      summary: Switch assignee for CMT
+      operationId: switchAssigneeForCMT
+      parameters:
+        - name: currentAssignee
+          in: query
+          description: The current assignee's ID
+          required: true
+          schema:
+            type: integer
+        - name: targetAssignee
+          in: query
+          description: The new assignee's ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully changed assignees
+        '400':
+          description: No tasks to change
+
+  /processinstance/procurement/closeTickets:
+    post:
+      summary: Close procurement tickets
+      operationId: closeTickets
+      parameters:
+        - name: processId
+          in: query
+          description: List of process IDs to be closed
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
+      responses:
+        '200':
+          description: Number of tickets closed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+
+components:
+  schemas:
+    ProcessInstanceDTO:
+      type: object
+      properties:
+        processInstanceId:
+          type: integer
+        reference:
+          type: string
+        referenceType:
+          type: string
+        priority:
+          type: integer
+        comment:
+          type: string
+        classificationId:
+          type: integer
+        status:
+          type: string
+
+    WorkFlowPayLoad:
+      type: object
+      properties:
+        processId:
+          type: integer
+        reference:
+          type: string
+        referenceType:
+          type: string
+        priority:
+          type: integer
+        actionObject:
+          type: object
+        comment:
+          type: string
+        classificationId:
+          type: integer
+        languagePreference:
+          type: string
+        creationDate:
+          type: string
+          format: date-time
+        workflowVariables:
+          type: object
+        taskVariables:
+          type: object
+        type:
+          type: integer
+        nextAssignedTo:
+          type: integer
+        postponedDate:
+          type: string
+          format: date-time
+        piStatus:
+          type: string
+        autoComplete:
+          type: boolean
+        disableErrorIfTicketExist:
+          type: boolean
+        positionCodeIds:
+          type: array
+          items:
+            type: integer
+        processInstanceId:
+          type: integer
+
+    AutoComplete:
+      type: object
+      properties:
+        processId:
+          type: integer
+        references:
+          type: array
+          items:
+            type: string
+
+    ProcessInstanceStatus:
+      type: string
+      enum:
+        - OPEN
+        - IN_PROGRESS
+        - CLOSED
+        - EXPIRED
+
+    UpdateActionObject:
+      type: object
+      properties:
+        processId:
+          type: integer
+        reference:
+          type: string
+        actionDetails:
+          type: object
+
+    ProcessInstanceTaskDTO:
+      type: object
+      properties:
+        taskId:
+          type: integer
+        taskName:
+          type: string
+        assignee:
+          type: string
+
+    UserDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
