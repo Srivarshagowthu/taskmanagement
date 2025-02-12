@@ -1,10 +1,9 @@
-package com.example.demo;
+package com.sky.cloud.repository;
 
-import com.example.demo.dto1.ProcessInstanceDTO;
-import com.example.demo.dto1.ProcessInstanceStatus;
+import com.sky.cloud.dto1.ProcessInstanceDTO;
+import com.sky.cloud.dto1.ProcessInstanceStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -18,7 +17,6 @@ public interface ProcessInstanceServiceRepository extends JpaRepository<ProcessI
     Optional<ProcessInstanceDTO> findByProcessInstanceId(Integer processInstanceId);
 
     // Assuming ProcessInstanceStatus is an enum or another entity that stores the status information
-    @Query("SELECT p.processInstanceId, p.piStatus FROM ProcessInstanceDTO p")
-    List<Object[]> findAllProcessInstanceStatuses();
+
 
 }

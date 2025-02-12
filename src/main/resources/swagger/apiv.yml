@@ -4,7 +4,7 @@ info:
   description: This API provides management for processes, including retrieval, creation, updating, and deletion of processes.
   version: '1'
 servers:
-  - url: http://localhost:9077/process
+  - url: http://localhost:8888/process
     description: Local development server
 paths:
   /process/id/{id}:

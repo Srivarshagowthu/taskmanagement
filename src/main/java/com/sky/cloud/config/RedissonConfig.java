@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Configuration
+@Component
 
 public class RedissonConfig {
     @Bean

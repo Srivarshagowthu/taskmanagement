@@ -1,13 +1,14 @@
-package com.example.demo;
+package com.sky.cloud.service;
 
-import com.example.demo.dto1.*;
+import com.sky.cloud.dto.ProcessInstanceTaskDTO;
+import com.sky.cloud.dto1.*;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 import java.util.Map;
 
 public interface ProcessInstanceService {
-    List<ProcessInstanceDTO> createProcess(CreateProcessRequest createProcessRequest) throws Exception;
+    List<ProcessInstanceDTO> createProcess(CreateProcessRequest createProcessRequest);
 
 ResponseEntity<Void> autoCloseTickets(String processIds, String statuses);
 
@@ -19,11 +20,7 @@ ResponseEntity<Void> autoCloseTickets(String processIds, String statuses);
 
     ResponseEntity<List<ProcessInstanceTaskDTO>> getProcessInstanceDetails(Integer processInstanceId);
 
-    ResponseEntity<List<Map<String, Object>>> getProcessInstanceStatuses();
-
     ResponseEntity<Void> switchAssigneeForCMT(Integer currentAssignee, Integer targetAssignee);
-
-    ResponseEntity<Void> updateTicket(Boolean createNew, UpdateActionObject updateActionObject);
 
     ResponseEntity<ProcessInstanceTaskDTO> getTaskDetails(Integer taskId);
 }

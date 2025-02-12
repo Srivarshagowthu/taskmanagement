@@ -1,7 +1,9 @@
-package com.example.demo;
+package com.sky.cloud.delegate;
 
-import com.example.demo.api1.ProcessinstanceApiDelegate;
-import com.example.demo.dto1.*;
+import com.sky.cloud.dto.ProcessInstanceTaskDTO;
+import com.sky.cloud.service.ProcessInstanceService;
+import com.sky.cloud.api1.ProcessinstanceApiDelegate;
+import com.sky.cloud.dto1.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -16,7 +18,7 @@ public class ProcessInstanceApiDelegateImpl implements ProcessinstanceApiDelegat
     }
 
     @Override
-    public ResponseEntity<List<ProcessInstanceDTO>> createProcess(CreateProcessRequest createProcessRequest) throws Exception {
+    public ResponseEntity<List<ProcessInstanceDTO>> createProcess(CreateProcessRequest createProcessRequest) {
         List<ProcessInstanceDTO> createdProcesses = processInstanceService.createProcess(createProcessRequest);
         return ResponseEntity.ok(createdProcesses);
     }
@@ -72,15 +74,6 @@ public class ProcessInstanceApiDelegateImpl implements ProcessinstanceApiDelegat
         }
     }
 
-    @Override
-    public ResponseEntity<List<ProcessInstanceStatus>> getProcessInstanceStatuses() {
-        try {
-            List<ProcessInstanceStatus> statuses = (List<ProcessInstanceStatus>) processInstanceService.getProcessInstanceStatuses();
-            return new ResponseEntity<>(statuses, HttpStatus.OK); // Return 200 OK with statuses
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR); // Handle error
-        }
-    }
 
     @Override
     public ResponseEntity<Void> switchAssigneeForCMT(Integer currentAssignee, Integer targetAssignee) {
@@ -92,14 +85,5 @@ public class ProcessInstanceApiDelegateImpl implements ProcessinstanceApiDelegat
         }
     }
 
-    @Override
-    public ResponseEntity<Void> updateTicket(Boolean createNew, UpdateActionObject updateActionObject) {
-        try {
-            processInstanceService.updateTicket(createNew, updateActionObject);
-            return new ResponseEntity<>(HttpStatus.OK); // Return 200 OK if successful
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST); // Handle error
-        }
-    }
 
 }

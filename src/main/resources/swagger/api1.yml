@@ -122,7 +122,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ProcessInstanceTaskDTO'
+                  type: object
 
   /processinstance/status/list:
     get:
@@ -268,33 +268,14 @@ components:
         - IN_PROGRESS
         - CLOSED
         - EXPIRED
-
     UpdateActionObject:
       type: object
       properties:
+        processInstanceId:
+          type: integer
         processId:
           type: integer
         reference:
           type: string
         actionDetails:
           type: object
-
-    ProcessInstanceTaskDTO:
-      type: object
-      properties:
-        taskId:
-          type: integer
-        taskName:
-          type: string
-        assignee:
-          type: string
-
-    UserDTO:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        email:
-          type: string

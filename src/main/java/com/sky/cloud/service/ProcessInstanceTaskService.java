@@ -13,4 +13,6 @@ public interface ProcessInstanceTaskService {
     ResponseEntity<ProcessInstanceTaskDTO> updateProcessInstanceTask(Integer id, ProcessInstanceTaskDTO updatedProcessInstanceTask);
     ResponseEntity<String> deleteProcessInstanceTaskById(Integer id);
     ResponseEntity<ProcessInstanceTaskDTO> updateProcessInstanceTaskStatus(Integer id, ProcessInstanceTaskDTO processInstanceTaskDTO);
+
+    void  save(ProcessInstanceTaskDTO task);
 }

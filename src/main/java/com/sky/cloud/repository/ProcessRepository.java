@@ -1,9 +1,9 @@
-package com.example.demo;
+package com.sky.cloud.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import com.example.demo.dto.Process;
+import com.sky.cloud.dtov.Process;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;

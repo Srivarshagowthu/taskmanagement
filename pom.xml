@@ -149,7 +149,7 @@
                 <version>6.5.0</version>
                 <executions>
                     <execution>
-                        <id>generate-api1</id>
+                        <id>generate-api1cy1</id>
                         <goals>
                             <goal>generate</goal>
                         </goals>
@@ -171,7 +171,7 @@
                     </execution>
                     <!-- Execution for api2.yml with a unique execution ID -->
                     <execution>
-                        <id>generate-api2</id>
+                        <id>generate-api2cy2</id>
                         <goals>
                             <goal>generate</goal>
                         </goals>
@@ -180,6 +180,48 @@
                             <generatorName>spring</generatorName>
                             <apiPackage>com.sky.cloud.api2</apiPackage>
                             <modelPackage>com.sky.cloud.dto2</modelPackage>
+                            <supportingFilesToGenerate>
+                                ApiUtil.java
+                            </supportingFilesToGenerate>
+                            <configOptions>
+                                <delegatePattern>true</delegatePattern>
+                                <useJakartaEe>true</useJakartaEe>
+                                <entityAnnotations>true</entityAnnotations>
+                                <jpaAnnotations>true</jpaAnnotations>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-api3cy3</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/swagger/apiv.yml</inputSpec>
+                            <generatorName>spring</generatorName>
+                            <apiPackage>com.sky.cloud.apiv</apiPackage>
+                            <modelPackage>com.sky.cloud.dtov</modelPackage>
+                            <supportingFilesToGenerate>
+                                ApiUtil.java
+                            </supportingFilesToGenerate>
+                            <configOptions>
+                                <delegatePattern>true</delegatePattern>
+                                <useJakartaEe>true</useJakartaEe>
+                                <entityAnnotations>true</entityAnnotations>
+                                <jpaAnnotations>true</jpaAnnotations>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-api4cy4</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/swagger/api1.yml</inputSpec>
+                            <generatorName>spring</generatorName>
+                            <apiPackage>com.sky.cloud.api1</apiPackage>
+                            <modelPackage>com.sky.cloud.dto1</modelPackage>
                             <supportingFilesToGenerate>
                                 ApiUtil.java
                             </supportingFilesToGenerate>

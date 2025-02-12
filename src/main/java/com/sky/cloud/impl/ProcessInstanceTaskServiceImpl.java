@@ -24,8 +24,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@Service
+
 @Slf4j
+@Service
 public class ProcessInstanceTaskServiceImpl implements ProcessInstanceTaskService {
 
     @Autowired
@@ -93,6 +94,11 @@ public class ProcessInstanceTaskServiceImpl implements ProcessInstanceTaskServic
         }
         existingTask.setStatus(processInstanceTaskDTO.getStatus());
         return ResponseEntity.ok(processInstanceTaskRepository.save(existingTask));
+    }
+//vcode
+    @Override
+    public void save(ProcessInstanceTaskDTO task) {
+
     }
 
     private String[] getNullPropertyNames(ProcessInstanceTaskDTO source, String... excludeFields) {

@@ -1,10 +1,10 @@
-package com.example.demo;
+package com.sky.cloud.impl;
 
-import com.example.demo.Exceptions.ErrorCode;
-import com.example.demo.dto.ModelApiResponse;
-import com.example.demo.dto.Process;
-import com.example.demo.Exceptions.BadRequestException;
-import com.example.demo.Exceptions.CyborgException;
+import com.sky.cloud.dtov.ModelApiResponse;
+import com.sky.cloud.dtov.Process;
+import com.sky.cloud.repository.ProcessRepository;
+import com.sky.cloud.service.ProcessService;
+import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,7 +19,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
-import com.example.demo.ProcessRepository;
+
 @Service
 @Slf4j
 public class ProcessServiceImpl implements ProcessService {
@@ -29,10 +29,9 @@ public class ProcessServiceImpl implements ProcessService {
 
     // Create new processes
     @Override
-    public ModelApiResponse createProcesses(List<Process> processes) throws CyborgException {
+    public ModelApiResponse createProcesses(List<Process> processes){
         if (processes == null || processes.isEmpty()) {
             log.error("The process list is empty or null.");
-            throw new BadRequestException("The process list is empty or null.");
         }
 
         // Fetch all existing processes from the database
@@ -49,24 +48,20 @@ public class ProcessServiceImpl implements ProcessService {
         for (Process process : processes) {
             Integer processId = process.getId();
 
-            // Check if the process ID is already in the database
-            if (existingProcessIds.contains(processId)) {
-                log.error("Duplicate process ID found in the database: {}", processId);
-                throw new CyborgException(ErrorCode.valueOf("Process with ID " + processId + " already exists in the database."));
-            }
-
-            // Check if the process ID is already in the request body (duplicate within the list)
-            if (!uniqueIds.add(processId)) {
-                log.error("Duplicate process ID found in the request: {}", processId);
-                throw new CyborgException(ErrorCode.valueOf("Process with ID " + processId + " is already in the request."));
-            }
+      // Check if the process ID is already in the database
+      if (existingProcessIds.contains(processId)) {
+        log.error("Duplicate process ID found in the database: {}", processId);
+               }
+      // Check if the process ID is already in the request body (duplicate within the list)
+      if (!uniqueIds.add(processId)) {
+        log.error("Duplicate process ID found in the request: {}", processId);
+                }
         }
 
-        // Validate all processes
-        if (processes.stream().anyMatch(process -> !validateProcess(process))) {
-            log.error("One or more processes failed validation.");
-            throw new BadRequestException("One or more processes failed validation.");
-        }
+    // Validate all processes
+    if (processes.stream().anyMatch(process -> !validateProcess(process))) {
+      log.error("One or more processes failed validation.");
+           }
 
         log.info("Starting to create {} processes.", processes.size());
 
@@ -102,7 +97,7 @@ public class ProcessServiceImpl implements ProcessService {
 
         // Get a process by ID
     @Override
-    public ResponseEntity<Process> getProcessById(Integer id) throws CyborgException{
+    public ResponseEntity<Process> getProcessById(Integer id){
         log.info("Fetching process with ID: {}", id);
         Process process = processRepository.findByIdAndDeletedFalse(id);
         if (process != null) {
@@ -127,7 +122,7 @@ public class ProcessServiceImpl implements ProcessService {
     // Soft delete a process by ID
     @Override
     @Transactional
-    public ResponseEntity<ModelApiResponse> softDelete(Integer id) throws CyborgException {
+    public ResponseEntity<ModelApiResponse> softDelete(Integer id){
         log.info("Soft deleting process with ID: {}", id);
         Process process = processRepository.findByIdAndDeletedFalse(id);
         if (process == null) {
@@ -142,47 +137,46 @@ public class ProcessServiceImpl implements ProcessService {
 
     // Batch update processes
     @Override
-    public ResponseEntity<List<Process>> updateProcesses(List<Process> processes) throws CyborgException {
+    public ResponseEntity<List<Process>> updateProcesses(List<Process> processes) {
         log.info("Updating {} processes.", processes.size());
 
         // Validate the processes and ensure each has a valid ID
-        for (Process process : processes) {
-            if (Objects.isNull(process.getId())) {
-                log.error("Process ID cannot be null");
-                throw new BadRequestException("Id cannot be null");
-            }
-        }
+        processes.stream()
+                .filter(p -> Objects.isNull(p.getId()))
+                .forEach(p -> log.error("Process ID cannot be null"));
 
         // Fetch the existing processes from the database
-        List<Process> existingProcesses = processRepository.findAllById(processes.stream()
-                .map(Process::getId)
-                .collect(Collectors.toList()));
+        List<Process> existingProcesses = processRepository.findAllById(
+                processes.stream()
+                        .map(Process::getId)
+                        .collect(Collectors.toList())
+        );
 
         // Update existing processes with new data
         for (Process existingProcess : existingProcesses) {
-            Process updatedProcess = processes.stream()
+            processes.stream()
                     .filter(p -> p.getId().equals(existingProcess.getId()))
                     .findFirst()
-                    .orElseThrow(() -> new BadRequestException("Process not found"));
-            // Check if 'active' field has changed
-            if (!existingProcess.getActive().equals(updatedProcess.getActive())) {
-                log.error("Attempt to modify 'active' field for process ID: {}", existingProcess.getId());
-                throw new CyborgException(ErrorCode.valueOf("The 'active' field cannot be modified."));
-            }
+                    .ifPresent(updatedProcess -> {
+                        // Log a warning if 'active' field is modified and skip updating
+                        if (!existingProcess.getActive().equals(updatedProcess.getActive())) {
+                            log.warn("Attempt to modify 'active' field for process ID: {}", existingProcess.getId());
+                            return;
+                        }
 
-            // Check if 'version' field has changed
-            if (!existingProcess.getVersion().equals(updatedProcess.getVersion())) {
-                log.error("Attempt to modify 'version' field for process ID: {}", existingProcess.getId());
-                throw new CyborgException(ErrorCode.valueOf("The 'version' field cannot be modified."));
-            }
+                        // Log a warning if 'version' field is modified and skip updating
+                        if (!existingProcess.getVersion().equals(updatedProcess.getVersion())) {
+                            log.warn("Attempt to modify 'version' field for process ID: {}", existingProcess.getId());
+                            return;
+                        }
 
-            existingProcess.setName(updatedProcess.getName());
-            existingProcess.setUpdatedBy(1); // Assuming user ID 1, adjust as necessary
-            existingProcess.setUpdatedAt(OffsetDateTime.ofInstant(new Date().toInstant(), ZoneOffset.UTC));
-            existingProcess.setDescription(updatedProcess.getDescription());
-
+                        // Perform updates on allowed fields
+                        existingProcess.setName(updatedProcess.getName());
+                        existingProcess.setUpdatedBy(1); // Assuming user ID 1, adjust as necessary
+                        existingProcess.setUpdatedAt(OffsetDateTime.ofInstant(new Date().toInstant(), ZoneOffset.UTC));
+                        existingProcess.setDescription(updatedProcess.getDescription());
+                    });
         }
-
 
         List<Process> updatedProcesses = processRepository.saveAll(existingProcesses);
         log.info("{} processes updated successfully.", updatedProcesses.size());

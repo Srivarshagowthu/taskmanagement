@@ -1,4 +1,4 @@
-package com.example.demo.Exceptions;
+package com.sky.cloud.Exceptions;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
