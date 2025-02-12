@@ -9,12 +9,13 @@ import java.util.Optional;
 
 public interface ProcessService {
 
-    /**
-     * Create new processes
-     * @param process The list of processes to be created
-     * @return ResponseEntity with the status and response message
-     */
-    ModelApiResponse createProcesses(List<Process> process) throws CyborgException;
+  /**
+   * Create new processes
+   *
+   * @param process The list of processes to be created
+   * @return ResponseEntity with the status and response message
+   */
+  ModelApiResponse createProcesses(List<Process> process) throws CyborgException;
 
     /**
      * Fetch all processes with pagination
