@@ -18,7 +18,7 @@
     <description>open api spec</description>
 
     <properties>
-        <!-- Updated to Java 17 as required by Spring Boot 3.x -->
+
         <java.version>23</java.version>
     </properties>
 

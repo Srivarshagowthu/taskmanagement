@@ -493,20 +493,20 @@ components:
           type: string
           format: email
           description: Email address of the user
-        phone_number:
-          type: string
-          pattern: ^\\+?[1-9]\\d{1,14}$  # Mobile number of the user in E.164 format
-          description: Mobile number of the user (E.164 format)
-        password:
-          type: string
-          description: Encrypted password of the user (hashed in the backend)
-          readOnly: true
-        Imei:
-          type: string
-          pattern: ^\\d{15}$  # IMEI should be a 15-digit number
-          description: IMEI of the user's device (15 digits)
-      required:
-        - name
-        - email
-        - phone_number
-        - Imei
+#        phone_number:
+#          type: string
+#          pattern: ^\\+?[1-9]\\d{1,14}$  # Mobile number of the user in E.164 format
+#          description: Mobile number of the user (E.164 format)
+#        password:
+#          type: string
+#          description: Encrypted password of the user (hashed in the backend)
+#          readOnly: true
+#        Imei:
+#          type: string
+#          pattern: ^\\d{15}$  # IMEI should be a 15-digit number
+#          description: IMEI of the user's device (15 digits)
+#      required:
+#        - name
+#        - email
+#        - phone_number
+#        - Imei
