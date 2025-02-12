@@ -1,0 +1,176 @@
+openapi: 3.0.1
+info:
+  title: Task API
+  version: "1"
+  description: API for managing tasks
+
+servers:
+  - url: http://localhost:8888
+    description: Local Server
+
+paths:
+  /tasks:
+    get:
+      summary: Get all tasks
+      operationId: getAllTasks
+      responses:
+        '200':
+          description: Successfully retrieved all tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '500':
+          description: Internal server error
+
+    post:
+      summary: Create new tasks
+      operationId: createTasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Task'
+      responses:
+        '201':
+          description: Tasks created successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad request if input is invalid
+        '500':
+          description: Internal server error
+
+    put:
+      summary: Update existing tasks
+      operationId: updateTasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Task'
+      responses:
+        '200':
+          description: Tasks updated successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad request if input is invalid
+        '404':
+          description: Not found if tasks do not exist
+        '500':
+          description: Internal server error
+
+  /tasks/{id}:
+    post:
+      summary: Get tasks by their IDs
+      operationId: getTasksByIds
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+              example: [1, 2, 3]
+      responses:
+        '200':
+          description: List of tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad request if input is invalid
+        '500':
+          description: Internal server error
+
+  /tasks/names:
+    post:
+      summary: Get tasks by their names
+      operationId: getTasksByNames
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+              example: ["Task 1", "Task 2"]
+      responses:
+        '200':
+          description: List of tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad request if input is invalid
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The task ID
+          example: 1
+          readOnly: true
+        name:
+          type: string
+          description: The name of the task
+          example: "Sample Task"
+        createdAt:
+          type: string
+          format: date-time
+          description: Task creation timestamp
+          example: "2025-01-01T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Task last updated timestamp
+          example: "2025-01-02T12:00:00Z"
+        createdBy:
+          type: integer
+          description: User who created the task
+          example: 123
+        updatedBy:
+          type: integer
+          description: User who last updated the task
+          example: 124
+        deleted:
+          type: integer
+          readOnly: true
+          description: Flag indicating whether the task is deleted
+          example: 0
